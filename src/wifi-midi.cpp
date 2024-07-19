@@ -1,6 +1,4 @@
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <WiFiUdp.h>
+#include <WiFiManager.h>
 #include <ESPmDNS.h>
 #include <AppleMIDI.h>
 #include <Control_Surface.h>
@@ -15,8 +13,6 @@ int8_t isConnected = 0;
 int storedMidiValue = 0;
 
 APPLEMIDI_CREATE_INSTANCE(WiFiUDP, MIDI, "GuitarMod", DEFAULT_CONTROL_PORT);
-
-// Then wrap it in a Control Surface-compatible MIDI interface
 FortySevenEffectsMIDI_Interface<decltype(MIDI) &> AppleMIDI_interface = MIDI;
 
 CCPotentiometer potentiometer{
@@ -46,39 +42,43 @@ void setup()
 {
   Serial.begin(115200); // STart serial for monitoring/debugging
 
-  WiFi.begin(ssid, pass);
+  WiFiManager wm;
 
-  while (WiFi.status() != WL_CONNECTED)
+  bool res;
+  wm.setHostname("MIDIGuitarKnob");
+  res = wm.autoConnect();
+
+  if (!res)
+    Serial.println("Failed to connect to WiFi!");
+
+  else
   {
-    delay(500);
-    Serial.println("Establishing connection to WiFi..." + String(WiFi.status()));
+
+    Serial.println("Connected to network!");
+    Serial.println("OK, now make sure you an rtpMIDI session that is Enabled");
+    Serial.println("Add device named Arduino with Host");
+    Serial.println(String(WiFi.localIP()));
+    Serial.println(WiFi.macAddress());
+
+    if (!MDNS.begin(AppleMIDI.getName()))
+      Serial.println("Error setting up MDNS responder");
+
+    AppleMIDI.setHandleConnected([](const APPLEMIDI_NAMESPACE::ssrc_t &ssrc, const char *name)
+                                 {
+        isConnected++;
+        Serial.println("Connected to session" + String(name)); 
+        Serial.println(String(ssrc)); });
+    AppleMIDI.setHandleDisconnected([](const APPLEMIDI_NAMESPACE::ssrc_t &ssrc)
+                                    {
+        isConnected--;
+        Serial.println("Disconnected");
+        Serial.println(String(ssrc)); });
+
+    MDNS.addService("apple-midi", "udp", AppleMIDI.getPort());
+
+    potentiometer.map(mappingFunction);
+    Control_Surface.begin();
   }
-
-  Serial.println("Connected to network!");
-
-  Serial.println("OK, now make sure you an rtpMIDI session that is Enabled");
-  Serial.println("Add device named Arduino with Host");
-  Serial.println(String(WiFi.localIP()));
-  Serial.println(WiFi.macAddress());
-
-  if (!MDNS.begin(AppleMIDI.getName()))
-    Serial.println("Error setting up MDNS responder");
-
-  AppleMIDI.setHandleConnected([](const APPLEMIDI_NAMESPACE::ssrc_t &ssrc, const char *name)
-                               {
-    isConnected++;
-    Serial.println("Connected to session" + String(name));
-    Serial.println(String(ssrc)); });
-  AppleMIDI.setHandleDisconnected([](const APPLEMIDI_NAMESPACE::ssrc_t &ssrc)
-                                  {
-    isConnected--;
-    Serial.println("Disconnected");
-    Serial.println(String(ssrc)); });
-
-  MDNS.addService("apple-midi", "udp", AppleMIDI.getPort());
-
-  potentiometer.map(mappingFunction);
-  Control_Surface.begin();
 }
 
 // -----------------------------------------------------------------------------
