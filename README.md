@@ -31,20 +31,27 @@ rechargeable battery pack to the controller via USB C for power. Do that however
 Built using Platform IO through VS Code. The source code should work through
 Arduino IDE provided you install the correct dependencies. 
 
-### Wifi Credentials
-
-Change `credentials_sample.h` to `credentials.h` and input your WiFi network ID
-and passkey. 
-
 ### Uploading to your board
 
 Plug your board into your computer via USB. Ensure that the correct board is
-detected by PlatformIO before continuin. If you are using a different board, make sure you have updated the
+detected by PlatformIO before continuing. If you are using a different board, make sure you have updated the
 `platform.ini`
 file accordingly. You'll also need you change the `upload_port` to match
 whatever port your computer has assigned. You can run the `devices` command in
 PlatformIO via VS Code to print the available ports. 
 
+
+## Provisioning WiFI
+
+Once your board is powered on it will go into Access Point mode
+and become available as a WiFi Access Point. Connect to the access point using
+any device with a browser (your phone, probably). Upon connecting you'll get a
+popup window that will let you select an existing WiFi network and enter a
+password. Upon connecting to the network the board will turn back into station
+mode. You can now connect it to your DAW (see below).
+
+Refer to the [WiFiManager Docs](https://github.com/tzapu/WiFiManager) for more
+details if needed.
 
 ## Connecting To Your DAW
 
